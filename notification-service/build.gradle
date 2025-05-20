@@ -1,0 +1,13 @@
+plugins {
+    id 'org.springframework.boot'
+    alias(libs.plugins.kotlin.spring)
+}
+
+dependencies {
+    implementation project(':common-lib')
+    implementation libs.spring.boot.starter
+    implementation libs.spring.kafka
+
+    testImplementation libs.spring.kafka.test
+    testImplementation libs.testcontainers.kafka
+}
