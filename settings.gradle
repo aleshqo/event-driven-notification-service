@@ -34,5 +34,11 @@ rootProject.name = "event-driven-notification-service"
 include(
         "common-lib",
         "transaction-service",
-        "notification-service"
+        "notification-service",
+        "account-service"
 )
+
+include 'account-service:account-service'
+include 'account-service'
+include 'account-service'
+include 'account-service'

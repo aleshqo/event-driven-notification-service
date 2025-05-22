@@ -1,17 +1,24 @@
 package com.example.banking.transaction.client
 
-import com.example.banking.common.dto.AccountDTO
+import com.example.banking.common.dto.BalanceUpdateRequest
 import org.springframework.stereotype.Component
 
 @Component
-class AccountClient {
+class AccountClient(
+    private val webClient: WebClient
+) {
 
-    fun getAccount(accountId: Long): AccountDTO {
-        // В реальности здесь HTTP-вызов к Account Service
-        return AccountDTO(
-            id = accountId,
-            balance = 1000.0,
-            ownerName = "Test User"
-        )
+    fun updateBalances(request: BalanceUpdateRequest) {
+        webClient.post()
+            .uri("/transfer")
+            .bodyValue(request)
+            .retrieve()
+            .onStatus({ it.is4xxClientError || it.is5xxServerError }) {
+                it.bodyToMono<String>().map { msg ->
+                    RuntimeException("Failed to update balances: $msg")
+                }
+            }
+            .toBodilessEntity()
+            .block()
     }
 }
