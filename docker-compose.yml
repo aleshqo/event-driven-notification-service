@@ -5,16 +5,17 @@ services:
     image: postgres:15
     container_name: postgres
     environment:
-      POSTGRES_DB: banking_db
       POSTGRES_USER: banking_user
       POSTGRES_PASSWORD: banking_pass
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./initdb/init.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./initdb/2_transaction_schema.sql:/docker-entrypoint-initdb.d/2_transaction_schema.sql
+      - ./initdb/3_account_schema.sql:/docker-entrypoint-initdb.d/3_account_schema.sql
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U banking_user -d banking_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U banking_user -d transaction_db -d account_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -38,15 +39,63 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Указываем, на каких интерфейсах Kafka будет слушать (внутри и снаружи)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      # Указываем, какие адреса Kafka будет сообщать клиентам (имя контейнера в сети!)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    volumes:
-      - kafka_data:/var/lib/kafka/data
     healthcheck:
       test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list" ]
       interval: 10s
       timeout: 5s
       retries: 3
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: transaction-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transaction_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+      - kafka
+
+  account-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: account-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/account_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgres
+      - kafka
+
+#  notification-service:
+#    build: ./notification-service
+#    container_name: notification-service
+#    depends_on:
+#      - kafka
+#    environment:
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    ports:
+#      - "8083:8080"
 
 volumes:
   postgres_data:

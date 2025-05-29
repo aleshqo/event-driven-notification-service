@@ -1,11 +1,10 @@
 package com.example.banking.common.dto
 
-import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 
-@Schema(description = "Transaction request")
+//@Schema(description = "Transaction request")
 data class TransactionDTO(
     @field:NotNull
     val senderId: Long,

@@ -7,13 +7,13 @@ import jakarta.persistence.*
 data class Account(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
 
     @Column(nullable = false)
-    val number: String,
+    var number: String,
 
     @Column(nullable = false)
-    val ownerName: String,
+    var ownerName: String,
 
     @Column(nullable = false)
     var balance: Double

@@ -1,7 +1,7 @@
 package com.example.banking.notification.service
 
 import com.example.banking.common.event.TransactionCompletedEvent
-import com.example.banking.common.event.TransactionStatus
+import com.example.banking.common.enums.TransactionStatus
 import org.springframework.stereotype.Service
 
 @Service

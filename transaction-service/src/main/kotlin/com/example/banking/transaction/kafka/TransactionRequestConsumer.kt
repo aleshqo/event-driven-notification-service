@@ -17,5 +17,6 @@ class TransactionRequestConsumer(
     fun handle(event: TransactionRequestedEvent) {
         logger.info("Received transaction request: ${event.requestId}")
         transactionProcessingService.processTransfer(event)
+        logger.info("Transaction request: ${event.requestId} handled")
     }
 }

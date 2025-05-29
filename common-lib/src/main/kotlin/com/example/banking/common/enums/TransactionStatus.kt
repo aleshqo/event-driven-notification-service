@@ -1,4 +1,4 @@
-package com.example.banking.common.event
+package com.example.banking.common.enums
 
 enum class TransactionStatus {
     SUCCESS,

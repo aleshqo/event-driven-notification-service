@@ -9,6 +9,6 @@ import java.time.Instant
 @Table(name = "processed_requests")
 data class ProcessedRequest(
     @Id
-    val requestId: String,
-    val processedAt: Instant = Instant.now()
+    var requestId: String,
+    var processedAt: Instant = Instant.now()
 )

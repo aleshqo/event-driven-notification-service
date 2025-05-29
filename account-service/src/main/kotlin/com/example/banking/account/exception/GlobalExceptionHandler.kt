@@ -1,4 +1,4 @@
-package com.example.banking.transaction.exception
+package com.example.banking.account.exception
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -6,23 +6,16 @@ import org.springframework.messaging.handler.annotation.support.MethodArgumentNo
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
-//TODO: issue#1 обработка ошибок
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-    @ExceptionHandler(BalanceUpdateClientException::class)
-    fun handleClientException(ex: BalanceUpdateClientException):ResponseEntity<String> {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body( "Balance Update Failed, reason: ${ex.message} ")
-    }
+    @ExceptionHandler(ResourceNotFoundException::class)
+    fun handleNotFound(ex: ResourceNotFoundException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.message)
 
-    @ExceptionHandler(BalanceUpdateServerException::class)
-    fun handleServerException(ex: BalanceUpdateServerException): ResponseEntity<String> {
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body( "Balance Update Failed, reason: ${ex.message} ")
-    }
+    @ExceptionHandler(InsufficientFundsException::class)
+    fun handleInsufficientFunds(ex: InsufficientFundsException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
 
     @ExceptionHandler(Exception::class)
     fun handleGeneral(ex: Exception): ResponseEntity<String> =
