@@ -1,85 +1,120 @@
 package com.example.banking.transaction.service
 
-import com.example.banking.common.dto.BalanceUpdateRequest
+import com.example.banking.common.dto.BalanceCancelRequest
+import com.example.banking.common.dto.BalanceConfirmRequest
+import com.example.banking.common.dto.BalanceReserveRequest
 import com.example.banking.common.enums.TransactionStatus
-import com.example.banking.common.event.TransactionCompletedEvent
-import com.example.banking.common.event.TransactionRequestedEvent
+import com.example.banking.common.event.TransactionCancelEvent
+import com.example.banking.common.event.TransactionConfirmEvent
+import com.example.banking.common.event.TransactionTryEvent
 import com.example.banking.transaction.client.AccountClient
-import com.example.banking.transaction.entity.ProcessedRequest
 import com.example.banking.transaction.entity.Transaction
-import com.example.banking.transaction.repository.ProcessedRequestRepository
+import com.example.banking.transaction.kafka.producer.TransactionCancelProducer
+import com.example.banking.transaction.kafka.producer.TransactionConfirmProducer
 import com.example.banking.transaction.repository.TransactionRepository
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class TransactionProcessingService(
     private val accountClient: AccountClient,
     private val transactionRepository: TransactionRepository,
-    private val processedRequestRepository: ProcessedRequestRepository,
-    @Qualifier("transactionCompletedKafkaTemplate")
-    private val kafkaTemplate: KafkaTemplate<String, TransactionCompletedEvent>
+    private val confirmProducer: TransactionConfirmProducer,
+    private val cancelProducer: TransactionCancelProducer,
 ) {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    fun tryTransaction(event: TransactionTryEvent) {
+        val transaction = Transaction(
+            requestId = event.requestId,
+            senderId = event.senderId,
+            receiverId = event.receiverId,
+            amount = event.amount,
+            status = TransactionStatus.PENDING
+        )
+        // Резервируем средства на аккаунте отправителя
+        accountClient.reserveAmount(
+            BalanceReserveRequest(
+                accountId = event.senderId,
+                amount = event.amount,
+                requestId = event.requestId
+            )
+        ).subscribe(
+            {
+                transactionRepository.save(transaction)
+                confirmProducer.sendConfirmEvent(event)
+            },
+            { error ->
+                println("Ошибка при резервировании средств: ${error.message}")
+                cancelProducer.sendCancelEvent(
+                    requestId = event.requestId,
+                    senderId = event.senderId,
+                    amount = event.amount,
+                    reason = "Ошибка TRY: ${error.message}"
+                )
+            }
+        )
+    }
 
-
-    @Transactional
-    fun processTransfer(event: TransactionRequestedEvent) {
-        try {
-            if (processedRequestRepository.existsById(event.requestId)) {
-                logger.warn("Request ${event.requestId} already processed, skipping.")
+    fun confirmTransaction(event: TransactionConfirmEvent) {
+        transactionRepository.findByRequestId(event.requestId)?.let { transaction ->
+            if (transaction.status != TransactionStatus.PENDING) {
+                println("Транзакция уже обработана или отменена.")
                 return
             }
 
-            accountClient.updateBalances(
-                BalanceUpdateRequest(
+            accountClient.confirmTransfer(
+                BalanceConfirmRequest(
                     senderId = event.senderId,
                     receiverId = event.receiverId,
                     amount = event.amount,
                     requestId = event.requestId
                 )
+            ).subscribe(
+                {
+                    transaction.status = TransactionStatus.CONFIRMED
+                    transactionRepository.save(transaction)
+                    println("Транзакция подтверждена: ${transaction.id}")
+                },
+                { error ->
+                    println("Ошибка подтверждения: ${error.message}")
+                    cancelProducer.sendCancelEvent(
+                        requestId = event.requestId,
+                        senderId = event.senderId,
+                        amount = event.amount,
+                        reason = "Ошибка CONFIRM: ${error.message}"
+                    )
+                }
             )
+        } ?: println("Транзакция ${event.requestId} не найдена.")
+    }
 
-            val tx = transactionRepository.save(
-                Transaction(
-                    senderId = event.senderId,
-                    receiverId = event.receiverId,
-                    amount = event.amount
-                )
-            )
-            processedRequestRepository.save(ProcessedRequest(requestId = event.requestId))
+    fun cancelTransaction(event: TransactionCancelEvent) {
+        val transaction = transactionRepository.findByRequestId(event.requestId)
 
-            kafkaTemplate.send(
-                "transfer-completed",
-                TransactionCompletedEvent(
-                    transactionId = tx.id!!,
-                    senderId = event.senderId,
-                    receiverId = event.receiverId,
-                    amount = event.amount,
-                    timestamp = event.timestamp,
-                    status = TransactionStatus.SUCCESS,
-                    message = "Transaction complete"
-                )
-            )
-
-        } catch (ex: Exception) {
-            kafkaTemplate.send(
-                "transfer-completed",
-                TransactionCompletedEvent(
-                    transactionId = -1,
-                    senderId = event.senderId,
-                    receiverId = event.receiverId,
-                    amount = event.amount,
-                    timestamp = event.timestamp,
-                    status = TransactionStatus.FAILED,
-                    message = "Error: ${ex.message}"
-                )
-            )
+        if (transaction == null) {
+            println("Не найдена транзакция для отмены: ${event.requestId}")
+            return
         }
+
+        if (transaction.status != TransactionStatus.PENDING) {
+            println("Транзакция уже подтверждена или отменена.")
+            return
+        }
+
+        accountClient.cancelReservation(
+            BalanceCancelRequest(
+                accountId = event.senderId,
+                amount = event.amount,
+                requestId = event.requestId
+            )
+        ).subscribe(
+            {
+                transaction.status = TransactionStatus.CANCELED
+                transactionRepository.save(transaction)
+                println("Транзакция отменена: ${transaction.id}")
+            },
+            { error ->
+                println("Ошибка отмены резерва: ${error.message}")
+            }
+        )
     }
 }
-

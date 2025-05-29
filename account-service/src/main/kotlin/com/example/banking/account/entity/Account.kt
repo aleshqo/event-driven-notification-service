@@ -1,6 +1,7 @@
 package com.example.banking.account.entity
 
 import jakarta.persistence.*
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "accounts")
@@ -16,5 +17,5 @@ data class Account(
     var ownerName: String,
 
     @Column(nullable = false)
-    var balance: Double
+    var balance: BigDecimal,
 )
