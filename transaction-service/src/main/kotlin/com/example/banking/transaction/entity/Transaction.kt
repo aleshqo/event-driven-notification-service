@@ -8,19 +8,17 @@ import java.time.Instant
 data class Transaction(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
-
-    @ManyToOne
-    @JoinColumn(name = "sender_id", nullable = false)
-    val sender: Account,
-
-    @ManyToOne
-    @JoinColumn(name = "receiver_id", nullable = false)
-    val receiver: Account,
+    var id: Long? = null,
 
     @Column(nullable = false)
-    val amount: Double,
+    var senderId: Long,
 
     @Column(nullable = false)
-    val timestamp: Instant = Instant.now()
+    var receiverId: Long,
+
+    @Column(nullable = false)
+    var amount: Double,
+
+    @Column(nullable = false)
+    var timestamp: Instant = Instant.now()
 )

@@ -13,12 +13,6 @@ dependencies {
     implementation libs.postgresql
     implementation libs.springdoc.openapi
 
-    // Spring WebFlux (реактивный веб-клиент)
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-
-    // Дополнительно (если нужны JSON-преобразования)
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
     // Для Unit тестов
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.2.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
