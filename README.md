@@ -1,3 +1,5 @@
+[//]: # (TODO: https://github.com/aleshqo/event-driven-notification-service/issues/11 доработать README.md)
+
 # Transaction Service with Kafka Notifications
 
 ## Overview
