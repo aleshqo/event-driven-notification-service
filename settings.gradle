@@ -1,22 +1,7 @@
-// settings.gradle
-
-
 pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-    }
-    resolutionStrategy {
-        eachPlugin {
-            switch (requested.id.id) {
-                case "org.jetbrains.kotlin.jvm":
-                    useVersion("2.0.0-RC3")
-                    break
-                case "org.springframework.boot":
-                    useVersion("3.2.5")
-                    break
-            }
-        }
     }
 }
 
@@ -24,21 +9,11 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
     }
-    versionCatalogs {
-        create("libs")
-    }
 }
 
 rootProject.name = "event-driven-notification-service"
 
-include(
-        "common-lib",
-        "transaction-service",
-        "notification-service",
-        "account-service"
-)
-
-include 'account-service:account-service'
-include 'account-service'
-include 'account-service'
-include 'account-service'
+include("common-lib")
+include("account-service")
+include("transaction-service")
+include("notification-service")
