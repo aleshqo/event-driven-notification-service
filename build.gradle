@@ -28,6 +28,8 @@ subprojects {
         implementation libs.kotlin.stdlib
         implementation libs.jackson.kotlin
 
+        implementation libs.spring.boot.web
+
         testImplementation(libs.spring.boot.test) {
             exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
         }

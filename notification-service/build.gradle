@@ -6,7 +6,9 @@ plugins {
 dependencies {
     implementation project(':common-lib')
     implementation libs.spring.boot.starter
+    implementation libs.spring.boot.web
     implementation libs.spring.kafka
+    implementation libs.spring.boot.actuator
 
     testImplementation libs.spring.kafka.test
     testImplementation libs.testcontainers.kafka

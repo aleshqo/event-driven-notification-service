@@ -1,12 +1,33 @@
-.gradle
+# Gradle
+.gradle/
 build/
-.idea
+!gradle/wrapper/gradle-wrapper.jar
 
+# IDE
+.idea/
 *.iws
 *.iml
 *.ipr
-
 out/
 
-.kotlin
+# Kotlin
+.kotlin/
+
+# OS
 .DS_Store
+
+# Logs
+*.log
+
+# Cursor / local AI artifacts
+.cursor/
+.cursorj/
+
+# Personal files (not part of the project)
+resume/
+resume.md
+
+# Generated binaries from local resume export
+*.pdf
+*.html
+!docs/**/*.html
